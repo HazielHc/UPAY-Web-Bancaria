@@ -1,8 +1,57 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
+import  authService  from "../services/authService.js";
 
-export const registrer = async(
-    req: Request, 
+interface RegisterBody {
+    username: string;
+    email: string;
+    password: string;
+}
+
+export const register = async (
+    req: Request<{}, {}, RegisterBody>,
+    res: Response
+): Promise<void> => {
+    try {
+        const { username, email, password } = req.body;
+
+        const result = await authService.register(
+            username,
+            email,
+            password
+        );
+
+        res.status(201).json(result);
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            success: false,
+            message: "fallo del server"
+        });
+
+        res.status(400).json({
+            message: error instanceof Error
+            ? error.message
+            :"Error desconocido"
+        });
+    }
+};
+
+export const login = async (
+    req: Request,
     res: Response
 ) => {
-    const {username, email, password} = req.body;
+    try {
+        const {email, password} = req.body;
+        const result = await authService.login(
+            email,
+            password
+        )
+        res.status(200).json(result);
+    }catch(error) {
+        res.status(500).json({
+            message: "Error al iniciar sesion"
+        });
+    }
 }

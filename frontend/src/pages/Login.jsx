@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Mail, ShieldCheck } from "lucide-react";
+import {login} from "../services/authService";
+import {useState} from "react";
+import { useNavigate } from "react-router-dom";
 
 function GoogleIcon() {
   return (
@@ -25,6 +28,22 @@ function GoogleIcon() {
 }
 
 export function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleLogin = async () => {
+    try {
+    const data = await login(email, password);
+
+    console.log("LOGIN OK:", data);
+
+    navigate("/dashboard");
+
+  } catch (error) {
+    console.error("Error login:", error.message);
+  }
+};
   return (
     <section className="relative z-10 mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl items-center gap-10 md:grid-cols-[0.9fr_1fr]">
       <div>
@@ -57,6 +76,8 @@ export function Login() {
               pattern="^[a-zA-Z0-9._%+-]+@gmail\\.com$"
               placeholder="usuario@gmail.com"
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </label>
 
@@ -68,12 +89,15 @@ export function Login() {
               className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 outline-none ring-cyan-300 transition focus:ring-2"
               placeholder="Tu contraseña"
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </label>
 
           <button
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
             type="button"
+            onClick={handleLogin}
           >
             Iniciar sesion
             <ArrowRight size={18} />
