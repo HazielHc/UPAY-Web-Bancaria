@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, UserPlus } from "lucide-react";
-import { register } from "../services/authService";
+import { login, register } from "../services/authService";
 import {useState} from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -36,6 +36,7 @@ export function Register() {
   const handleRegister = async () => {
     try{
       const data = await register(user, email, password);
+      await login(email, password);
       console.log("REGISTER GOD:", data);
 
       navigate("/profile");

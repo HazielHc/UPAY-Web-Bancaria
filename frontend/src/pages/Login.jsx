@@ -38,7 +38,7 @@ export function Login() {
 
     console.log("LOGIN OK:", data);
 
-    navigate("/dashboard");
+    navigate("/profile");
 
   } catch (error) {
     console.error("Error login:", error.message);
