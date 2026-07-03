@@ -1,6 +1,6 @@
 export const login = async (email: string, password: string) => {
 
-    const response = await fetch("http://localhost:3000/login", {
+    const response = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -26,7 +26,7 @@ export const register = async (
 ) => {
 
     const response = await fetch(
-        "http://localhost:3000/register",
+        "http://localhost:3000/auth/register",
         {
             method: "POST",
             headers: {
@@ -53,7 +53,7 @@ export const getProfile = async () => {
     const token = localStorage.getItem("token");
 
     const response = await fetch(
-        "http://localhost:3000/profile",
+        "http://localhost:3000/auth/profile",
         {
             headers:{
                 Authorization: `Bearer ${token}`

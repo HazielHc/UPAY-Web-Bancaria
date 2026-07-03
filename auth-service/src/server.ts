@@ -13,7 +13,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(authRoutes);
+app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
     console.log(`Servidor en http://localhost:${PORT}`);

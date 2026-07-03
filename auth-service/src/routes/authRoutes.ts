@@ -1,6 +1,5 @@
 import  {Router}  from "express";
-import { register} from "../controllers/authController.js"
-import {login} from "../controllers/authController.js"
+import { register, login, googleLogin} from "../controllers/authController.js"
 import { authMiddlewares } from "../middlewares/authMiddleware.js";
 
 const router = Router();
@@ -15,7 +14,8 @@ router.get(
 );
 
 router.post("/register", register);
-router.post("/login", login)
+router.post("/login", login);
+router.post("/google", googleLogin);
 
 router.get(
     "/profile",

@@ -7,6 +7,10 @@ interface RegisterBody {
     password: string;
 }
 
+interface GoogleBody {
+    idToken: string;
+}
+
 export const register = async (
     req: Request<{}, {}, RegisterBody>,
     res: Response
@@ -25,15 +29,12 @@ export const register = async (
     } catch (error) {
         console.error(error);
 
-        res.status(500).json({
-            success: false,
-            message: "fallo del server"
-        });
-
         res.status(400).json({
-            message: error instanceof Error
-            ? error.message
-            :"Error desconocido"
+            success: false,
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "Error desconocido",
         });
     }
 };
@@ -43,15 +44,42 @@ export const login = async (
     res: Response
 ) => {
     try {
-        const {email, password} = req.body;
+        const { email, password } = req.body;
+
         const result = await authService.login(
             email,
             password
-        )
+        );
+
         res.status(200).json(result);
-    }catch(error) {
-        res.status(500).json({
-            message: "Error al iniciar sesion"
+
+    } catch (error) {
+        res.status(400).json({
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "Error desconocido",
         });
     }
-}
+};
+
+export const googleLogin = async (
+    req: Request<{}, {}, GoogleBody>,
+    res: Response
+) => {
+    try {
+        const { idToken } = req.body;
+
+        const result = await authService.googleLogin(idToken);
+
+        res.status(200).json(result);
+
+    } catch (error) {
+        res.status(400).json({
+            message:
+                error instanceof Error
+                    ? error.message
+                    : "Error desconocido",
+        });
+    }
+};

@@ -9,6 +9,7 @@ export interface IUser {
     role : string;
     googleId?: string;
     providers: string[];
+    avatar?: string;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -33,18 +34,22 @@ const UserSchema = new Schema<IUser>(
         },
         role:{
             type: String,
-            required: true,
-            enum:["ADMIN","USER"]
+            enum:["ADMIN","USER"],
+            default: "USER"
         },
         providers:{
             type: [String],
-            required: true
+            default: ["local"]
         },
         googleId:{
-            type: Number,
+            type: String,
             required: false,
             unique: true,
             sparse: true
+        },
+        avatar:{
+            type: String,
+            required: false
         }
     },
     {

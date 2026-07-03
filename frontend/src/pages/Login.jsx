@@ -3,6 +3,7 @@ import { ArrowRight, Mail, ShieldCheck } from "lucide-react";
 import {login} from "../services/authService";
 import {useState} from "react";
 import { useNavigate } from "react-router-dom";
+import { GoogleLoginButton } from "../components/GoogleLoginButton";
 
 function GoogleIcon() {
   return (
@@ -110,13 +111,7 @@ export function Login() {
           <span className="h-px flex-1 bg-white/10" />
         </div>
 
-        <button
-          className="inline-flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white px-4 py-3 font-semibold text-slate-950 transition hover:-translate-y-0.5 hover:bg-slate-100"
-          type="button"
-        >
-          <GoogleIcon />
-          Iniciar sesion con Google
-        </button>
+      <GoogleLoginButton />
 
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
           <Link className="text-cyan-300" to="/register">
