@@ -1,53 +1,54 @@
-import mongoose, { Schema } from "mongoose";
-
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser {
     userId: string;
     username: string;
     email: string;
     password?: string;
-    role : string;
+    role: string;
     googleId?: string;
     providers: string[];
     avatar?: string;
 }
 
-const UserSchema = new Schema<IUser>(
+export interface IUserDocument extends IUser, Document {}
+
+const UserSchema = new Schema<IUserDocument>(
     {
-        userId:{
-            type:String,
+        userId: {
+            type: String,
             required: true,
             unique: true
         },
-        username:{
+        username: {
             type: String,
             required: true
         },
-        email:{
+        email: {
             type: String,
             unique: true,
             required: true
         },
-        password:{
+        password: {
             type: String,
             required: false
         },
-        role:{
+        role: {
             type: String,
-            enum:["ADMIN","USER"],
+            enum: ["ADMIN", "USER"],
             default: "USER"
         },
-        providers:{
+        providers: {
             type: [String],
             default: ["local"]
         },
-        googleId:{
+        googleId: {
             type: String,
             required: false,
             unique: true,
             sparse: true
         },
-        avatar:{
+        avatar: {
             type: String,
             required: false
         }
@@ -57,9 +58,9 @@ const UserSchema = new Schema<IUser>(
     }
 );
 
-const UserModel = mongoose.model<IUser>(
+const UserModel = mongoose.model<IUserDocument>(
     "User",
     UserSchema
-)
+);
 
 export default UserModel;

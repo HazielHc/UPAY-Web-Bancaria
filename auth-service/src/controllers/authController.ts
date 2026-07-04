@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import  authService  from "../services/authService.js";
+import googleService from "../services/googleService.js";
 
 interface RegisterBody {
     username: string;
@@ -70,7 +71,7 @@ export const googleLogin = async (
     try {
         const { idToken } = req.body;
 
-        const result = await authService.googleLogin(idToken);
+        const result = await googleService.googleAuth(idToken);
 
         res.status(200).json(result);
 
