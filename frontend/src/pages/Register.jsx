@@ -1,5 +1,8 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, UserPlus } from "lucide-react";
+import { login, register } from "../services/authService";
+import {useState} from "react";
+import { useNavigate } from "react-router-dom";
 
 function GoogleIcon() {
   return (
@@ -25,6 +28,22 @@ function GoogleIcon() {
 }
 
 export function Register() {
+  const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  const handleRegister = async () => {
+    try{
+      const data = await register(user, email, password);
+      await login(email, password);
+      console.log("REGISTER GOD:", data);
+
+      navigate("/dashboard");
+    } catch(error){
+      console.error("Error register:", error.message);
+    }
+  }
   return (
     <section className="relative z-10 mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl items-center gap-10 md:grid-cols-[0.9fr_1fr]">
       <div>
@@ -50,20 +69,27 @@ export function Register() {
             className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 outline-none ring-cyan-300 transition focus:ring-2"
             placeholder="Nombre"
             type="text"
+            value={user}
+            onChange={(e) => setUser(e.target.value)}
           />
           <input
             className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 outline-none ring-cyan-300 transition focus:ring-2"
             placeholder="Correo"
             type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
           <input
             className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 outline-none ring-cyan-300 transition focus:ring-2"
             placeholder="Contrasena"
             type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <button
             className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
             type="button"
+            onClick={handleRegister}
           >
             Crear cuenta
             <ArrowRight size={18} />
