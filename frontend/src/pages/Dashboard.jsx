@@ -58,6 +58,48 @@ function Sparkline({ data, color = "#8b7dff", width = 80, height = 24 }) {
   );
 }
 
+const currencyFlagMap = {
+  MXN: "MX",
+  USD: "US",
+  EUR: "EU",
+  GBP: "UK",
+  CHF: "CH",
+  JPY: "JP",
+};
+
+const currencySymbolMap = {
+  MXN: "$",
+  USD: "US$",
+  EUR: "€",
+  GBP: "£",
+  CHF: "CHF",
+  JPY: "¥",
+};
+
+const currencyLabelMap = {
+  MXN: "MXN Peso",
+  USD: "USD Dolar",
+  EUR: "EUR Euro",
+  GBP: "GBP Libra",
+  CHF: "CHF Franco",
+  JPY: "JPY Yen",
+};
+
+const currencyOptionLabelById = {
+  "mxn-remunerada": "Peso mexicano (MXN)",
+  "mxn-main": "Peso (MXN)",
+  "usd-travel": "Dolar (USD)",
+  "eur-savings": "Euro (EUR)",
+  "gbp-pound": "Libra (GBP)",
+  "chf-franc": "Franco (CHF)",
+  "jpy-yen": "Yen (JPY)",
+};
+
+const getCurrencyFlag = (currency) => currencyFlagMap[currency] || "";
+const getCurrencySymbol = (currency) => currencySymbolMap[currency] || "";
+const getCurrencyLabel = (account) => currencyLabelMap[account?.currency] || account?.name || "";
+const getCurrencyOptionLabel = (account) => currencyOptionLabelById[account.id] || `${account.name} (${account.currency})`;
+
 export function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -210,8 +252,7 @@ export function Dashboard() {
 
   // Formateador de saldos
   const formatBalance = (amount, currency) => {
-    const symbolMap = { MXN: "$", USD: "US$", EUR: "€", GBP: "£", JPY: "¥", CHF: "CHF" };
-    const symbol = symbolMap[currency] || "";
+    const symbol = getCurrencySymbol(currency);
     
     if (hideBalance) return "••••••";
     
@@ -460,14 +501,6 @@ export function Dashboard() {
             <div className="bg-[#0f0d2c]/90 border-t border-white/5 p-5 backdrop-blur-md w-full relative z-10">
               <div className="mb-4 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/40">
                 <span>Divisas</span>
-                <button
-                  className="flex items-center gap-1 text-indigo-400 hover:text-indigo-300 transition normal-case font-semibold text-sm"
-                  type="button"
-                  onClick={() => setShowContactsDrawer(true)}
-                >
-                  Ver contactos
-                  <ChevronRight size={16} />
-                </button>
               </div>
 
               <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -477,7 +510,11 @@ export function Dashboard() {
                   .map((acc) => {
                     const isSelected = activeAccountId === acc.id;
                     const bal = formatBalance(acc.balance, acc.currency);
-                    const displayBal = hideBalance ? "••••" : `${bal.symbol}${bal.integer}`;
+                    const displayBal = hideBalance 
+                      ? "••••" 
+                      : acc.balance % 1 === 0 
+                      ? `${bal.symbol}${bal.integer}` 
+                      : `${bal.symbol}${bal.integer}${bal.decimal}`;
 
                     return (
                       <button
@@ -491,7 +528,7 @@ export function Dashboard() {
                         type="button"
                       >
                         <div className="relative">
-                          <Flag countryCode={acc.currency === "MXN" ? "MX" : acc.currency === "USD" ? "US" : acc.currency === "EUR" ? "EU" : ""} className="size-10 rounded-full overflow-hidden border border-white/10" />
+                          <Flag countryCode={getCurrencyFlag(acc.currency)} className="size-10 rounded-full overflow-hidden border border-white/10" />
                           {isSelected && (
                             <span className="absolute -bottom-1 -right-1 grid size-4.5 place-items-center rounded-full bg-white text-[9px] text-[#0f0d2c] font-black shadow-lg">
                               <Check size={10} strokeWidth={4} />
@@ -505,43 +542,6 @@ export function Dashboard() {
                       </button>
                     );
                   })}
-
-                {/* Tasas Adicionales sin cuenta */}
-                {data.exchangeRates.map((rate) => {
-                  const targetCurrency = rate.pair.split("/")[0];
-                  // Si no hay una cuenta para esta divisa, mostrarla
-                  if (data.accounts.some(a => a.currency === targetCurrency)) return null;
-
-                  return (
-                    <div
-                      key={rate.pair}
-                      className="flex min-w-[170px] items-center gap-3 rounded-2xl p-2.5 bg-white/5 border border-transparent opacity-60 text-left"
-                    >
-                      <Flag countryCode={targetCurrency === "GBP" ? "UK" : targetCurrency === "JPY" ? "JP" : targetCurrency === "CHF" ? "CH" : ""} className="size-10 rounded-full overflow-hidden border border-white/5" />
-                      <div className="min-w-0">
-                        <p className="truncate text-xs font-semibold text-white/40">{targetCurrency}</p>
-                        <p className="text-sm font-bold text-white/60 mt-0.5">
-                          {hideBalance ? "••••" : `$0`}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Todas las divisas */}
-                <button
-                  className="flex min-w-[170px] items-center gap-3 rounded-2xl p-2.5 bg-white/5 border border-transparent hover:bg-white/10 text-left transition"
-                  type="button"
-                  onClick={() => triggerNotification("Panel de más divisas próximamente.")}
-                >
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/10 border border-white/5 text-white">
-                    <WalletCards size={18} />
-                  </span>
-                  <span>
-                    <span className="block text-xs font-bold text-white/80">Todas las</span>
-                    <span className="block text-xs font-bold text-white/50">divisas</span>
-                  </span>
-                </button>
               </div>
             </div>
           </motion.section>
@@ -733,8 +733,8 @@ export function Dashboard() {
           const numFromAmount = parseFloat(exchangeFromAmount) || 0;
           const calculatedToAmount = parseFloat((numFromAmount * rate).toFixed(2));
           
-          const fromSymbol = fromAcc?.currency === "USD" ? "US$" : fromAcc?.currency === "EUR" ? "€" : "$";
-          const toSymbol = toAcc?.currency === "USD" ? "US$" : toAcc?.currency === "EUR" ? "€" : "$";
+          const fromSymbol = getCurrencySymbol(fromAcc?.currency);
+          const toSymbol = getCurrencySymbol(toAcc?.currency);
           
           const displayFromBalance = fromAcc ? fromAcc.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
           const displayToBalance = toAcc ? toAcc.balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
@@ -791,7 +791,7 @@ export function Dashboard() {
                       >
                         {data.accounts.map((acc) => (
                           <option key={acc.id} value={acc.id} className="bg-[#171439] text-white">
-                            {acc.name === "Cuenta Remunerada" ? "Peso mexicano (MXN)" : acc.name === "Cuenta principal" ? "Peso mexicano (MXN) - Principal" : acc.name === "Dolares viaje" ? "Dólar estadounidense (USD)" : acc.name === "Ahorro Europa" ? "Euro (EUR)" : `${acc.name} (${acc.currency})`}
+                            {getCurrencyOptionLabel(acc)}
                           </option>
                         ))}
                       </select>
@@ -808,10 +808,10 @@ export function Dashboard() {
                     {/* Caja origen (De) */}
                     <div className="flex h-16 items-center justify-between rounded-xl border border-white/5 bg-[#13112c] px-4 py-2.5">
                       <div className="flex items-center gap-3">
-                        <Flag countryCode={fromAcc?.currency === "MXN" ? "MX" : fromAcc?.currency === "USD" ? "US" : fromAcc?.currency === "EUR" ? "EU" : ""} className="size-8 rounded-full border border-white/10" />
+                        <Flag countryCode={getCurrencyFlag(fromAcc?.currency)} className="size-8 rounded-full border border-white/10" />
                         <div className="text-left flex flex-col justify-center">
                           <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider">De</span>
-                          <span className="text-xs font-bold text-white leading-tight mt-0.5">{fromAcc?.currency === "USD" ? "USD Dólar" : fromAcc?.currency === "MXN" ? "MXN Peso" : fromAcc?.currency === "EUR" ? "EUR Euro" : fromAcc?.name}</span>
+                          <span className="text-xs font-bold text-white leading-tight mt-0.5">{getCurrencyLabel(fromAcc)}</span>
                         </div>
                       </div>
                       <div className="text-right flex flex-col justify-center">
@@ -836,10 +836,10 @@ export function Dashboard() {
                     {/* Caja destino (A) */}
                     <div className="flex h-16 items-center justify-between rounded-xl border border-white/5 bg-[#13112c] px-4 py-2.5">
                       <div className="flex items-center gap-3">
-                        <Flag countryCode={toAcc?.currency === "MXN" ? "MX" : toAcc?.currency === "USD" ? "US" : toAcc?.currency === "EUR" ? "EU" : ""} className="size-8 rounded-full border border-white/10" />
+                        <Flag countryCode={getCurrencyFlag(toAcc?.currency)} className="size-8 rounded-full border border-white/10" />
                         <div className="text-left flex flex-col justify-center">
                           <span className="text-[9px] font-bold text-white/40 uppercase tracking-wider">A</span>
-                          <span className="text-xs font-bold text-white leading-tight mt-0.5">{toAcc?.currency === "USD" ? "USD Dólar" : toAcc?.currency === "MXN" ? "MXN Peso" : toAcc?.currency === "EUR" ? "EUR Euro" : toAcc?.name}</span>
+                          <span className="text-xs font-bold text-white leading-tight mt-0.5">{getCurrencyLabel(toAcc)}</span>
                         </div>
                       </div>
                       <div className="text-right flex flex-col justify-center">

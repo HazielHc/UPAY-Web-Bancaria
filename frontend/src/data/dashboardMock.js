@@ -20,7 +20,7 @@ export const accounts = [
   },
   {
     id: "mxn-main",
-    name: "Cuenta principal",
+    name: "Peso",
     type: "Debito",
     currency: "MXN",
     balance: 117.14,
@@ -30,7 +30,7 @@ export const accounts = [
   },
   {
     id: "usd-travel",
-    name: "Dolares viaje",
+    name: "Dolar",
     type: "Multidivisa",
     currency: "USD",
     balance: 0.00,
@@ -40,13 +40,43 @@ export const accounts = [
   },
   {
     id: "eur-savings",
-    name: "Ahorro Europa",
+    name: "Euro",
     type: "Ahorro",
     currency: "EUR",
     balance: 0.00,
     cardNumber: "7714",
     accent: "from-indigo-800 to-slate-950",
     rate: "Ahorros UE"
+  },
+  {
+    id: "gbp-pound",
+    name: "Libra",
+    type: "Multidivisa",
+    currency: "GBP",
+    balance: 0.00,
+    cardNumber: "4401",
+    accent: "from-blue-900 to-slate-950",
+    rate: "Libra esterlina"
+  },
+  {
+    id: "chf-franc",
+    name: "Franco",
+    type: "Multidivisa",
+    currency: "CHF",
+    balance: 0.00,
+    cardNumber: "5502",
+    accent: "from-red-800 to-slate-950",
+    rate: "Franco suizo"
+  },
+  {
+    id: "jpy-yen",
+    name: "Yen",
+    type: "Multidivisa",
+    currency: "JPY",
+    balance: 0.00,
+    cardNumber: "6603",
+    accent: "from-white to-red-700",
+    rate: "Yen japones"
   },
 ];
 
@@ -68,6 +98,18 @@ export const exchangeRates = [
     rate: 23.04,
     change: 0.27,
     trend: [44, 46, 48, 45, 52, 55, 53, 58, 61, 59, 63, 67],
+  },
+  {
+    pair: "CHF/MXN",
+    rate: 22.41,
+    change: 0.16,
+    trend: [48, 50, 49, 52, 54, 53, 56, 58, 57, 60, 62, 61],
+  },
+  {
+    pair: "JPY/MXN",
+    rate: 0.13,
+    change: -0.04,
+    trend: [62, 60, 59, 58, 56, 57, 55, 54, 52, 51, 50, 49],
   },
   {
     pair: "CAD/MXN",
