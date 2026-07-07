@@ -1,0 +1,46 @@
+{
+    "auth-service": {
+        "collections": {
+            "users": [
+                "_id",
+                "username",
+                "email",
+                "password",
+                "role",
+                "googleId",
+                "provider",
+                "createdAt",
+                "updatedAt"
+            ]
+        },
+        "endpoints": {
+            "register": [
+                "username",
+                "email",
+                "password"
+            ],
+            "login": [
+                "email",
+                "password"
+            ],
+            "googleLogin":[
+                "googleToken"
+            ],
+            "refreshToken":[
+                "refreshToken"
+            ],
+            "logut":[
+                "refreshToken"
+            ]
+        }, 
+        "externalApis":{
+            "googleOauth":{
+                "purpose": "logarte con google"
+            }
+        },
+        "events":{
+            "userRegistered":{},
+            "userLoggedIn":{}
+        }
+    }
+}
