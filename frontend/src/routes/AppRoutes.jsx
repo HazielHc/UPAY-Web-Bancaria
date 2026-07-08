@@ -4,6 +4,7 @@ import { Home } from "../pages/Home.jsx";
 import { Login } from "../pages/Login.jsx";
 import { Register } from "../pages/Register.jsx";
 import { Profile } from "../pages/Profile.jsx";
+import { Dashboard } from "../pages/Dashboard.jsx";
 
 export function AppRoutes() {
   return (
