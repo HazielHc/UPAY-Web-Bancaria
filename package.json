@@ -1,10 +1,24 @@
 {
-	"dependencies": {
-		"cors": "^2.8.6",
-		"dotenv": "^17.4.2",
-		"express": "^5.2.1",
-		"jsonwebtoken": "^9.0.3",
-		"mysql2": "^3.22.5",
-		"zod": "^4.4.3"
-	}
+  "name": "UPAY-Web-Bancaria",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently -n auth,account,gateway -c blue,green,yellow \"pnpm --filter ./auth-service dev\" \"pnpm --filter ./account-service dev\" \"pnpm --filter ./api-gateway dev\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.3.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
 }

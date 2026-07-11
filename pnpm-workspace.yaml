@@ -1,0 +1,10 @@
+packages:
+  - "auth-service"
+  - "account-service"
+  - "api-gateway"
+  - "currency-service"
+  - "transaction-service"
+  - "notification-service"
+allowBuilds:
+  bcrypt: true
+  esbuild: false

@@ -28,7 +28,7 @@ async function start() {
         console.log('Connected to MySQL');
         app.listen(PORT, () => console.log(`account-service on http://localhost:${PORT}`));
     } catch (err) {
-        console.error('❌ Could not connect to MySQL', err);
+        console.error('Could not connect to MySQL', err);
         process.exit(1);
     }
 }
