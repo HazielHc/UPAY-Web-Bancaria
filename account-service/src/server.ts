@@ -4,6 +4,7 @@ import cors from 'cors';
 import { pool } from './config/db';
 import accountRoutes from './routes/account.routes';
 import cardRoutes from './routes/card.route';
+import internalRoutes from './routes/balance.route';
 
 const app = express();
 
@@ -14,6 +15,8 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.use('/accounts', accountRoutes);
 app.use('/accounts/:accountId/cards', cardRoutes);
+
+app.use('/internal', internalRoutes);
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err);
@@ -26,7 +29,7 @@ async function start() {
     try {
         await pool.query('SELECT 1');
         console.log('Connected to MySQL');
-        app.listen(PORT, () => console.log(`account-service on http://localhost:${PORT}`));
+        app.listen(PORT, () => console.log(`Servidor de account en : http://localhost:${PORT}`));
     } catch (err) {
         console.error('Could not connect to MySQL', err);
         process.exit(1);

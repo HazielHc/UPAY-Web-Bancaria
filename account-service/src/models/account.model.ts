@@ -54,3 +54,11 @@ export async function deleteAccount(id: string, profileId: string): Promise<bool
     );
     return result.affectedRows > 0;
 }
+
+export async function getAccountByIdAny(id: string): Promise<Account | null> {
+    const [rows] = await pool.execute<Account[]>(
+        `SELECT * FROM accounts WHERE id = ? LIMIT 1`,
+        [id],
+    );
+    return rows[0] ?? null;
+}

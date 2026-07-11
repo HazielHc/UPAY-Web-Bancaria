@@ -7,7 +7,7 @@ USE account_service;
 
 CREATE TABLE IF NOT EXISTS accounts (
     id            CHAR(36)      NOT NULL,                 
-    profile_id    VARCHAR(255)   NOT NULL,                 -
+    profile_id    VARCHAR(255)   NOT NULL,                 
     bank_name     VARCHAR(100)  NOT NULL,
     account_type  ENUM('checking','savings') NOT NULL DEFAULT 'checking',
     balance       DECIMAL(19,4) NOT NULL DEFAULT 0,       
@@ -34,4 +34,17 @@ CREATE TABLE IF NOT EXISTS cards (
     INDEX idx_cards_account (account_id),
     CONSTRAINT fk_cards_account FOREIGN KEY (account_id)
     REFERENCES accounts (id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS balance_operations (
+    operation_id   CHAR(80)      NOT NULL,      
+    account_id     CHAR(36)      NOT NULL,
+    direction      ENUM('debit','credit') NOT NULL,
+    amount         DECIMAL(19,4) NOT NULL,
+    balance_after  DECIMAL(19,4) NOT NULL,      
+    created_at     TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (operation_id),                
+    INDEX idx_balop_account (account_id),
+    CONSTRAINT fk_balop_account FOREIGN KEY (account_id)
+        REFERENCES accounts (id) ON DELETE CASCADE
 ) ENGINE=InnoDB;

@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import { connectDB } from "./config/database.js";
+import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js"
 import cors from "cors"
 
@@ -16,5 +16,5 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
-    console.log(`Servidor en http://localhost:${PORT}`);
+    console.log(`Servidor de auth en:  http://localhost:${PORT}`);
 });
