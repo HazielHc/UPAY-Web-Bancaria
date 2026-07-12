@@ -155,7 +155,82 @@ export const recentTransactions = [
 ];
 
 export const transferContacts = [
-  { id: "contact-1", name: "Sofia", initials: "SO", account: "MXN 4832" },
-  { id: "contact-2", name: "Marco", initials: "MA", account: "USD 1298" },
-  { id: "contact-3", name: "Ana", initials: "AN", account: "EUR 7714" },
+  { id: "contact-1", name: "Sofia", initials: "SO", account: "MXN .........4832" },
+  { id: "contact-2", name: "Marco", initials: "MA", account: "USD .........1298" },
+  { id: "contact-3", name: "Ana", initials: "AN", account: "EUR .........7714" },
+];
+
+export const bankAccounts = [
+  {
+    id: "nu-001",
+    bankName: "nu",
+    type: "Debito",
+    cardLast4: "9942",
+    owner: "USUARIO UPAY",
+    primaryCurrency: "MXN",
+    accent: "bg-gradient-to-br from-[#82259e] via-[#611677] to-[#450955]",
+    balances: [
+      { currency: "MXN", balance: 4200 },
+      { currency: "USD", balance: 85 },
+      { currency: "EUR", balance: 0 },
+    ],
+    transactions: [
+      { id: "nu-tx-1", description: "Deposito inicial", category: "Ingreso", amount: 4200, currency: "MXN", date: "Hoy, 09:10" },
+      { id: "nu-tx-2", description: "Conversion MXN a USD", category: "Divisas", amount: 85, currency: "USD", date: "Ayer, 16:20" },
+    ],
+  },
+  {
+    id: "bbva-001",
+    bankName: "BBVA",
+    type: "Debito",
+    cardLast4: "4832",
+    owner: "USUARIO UPAY",
+    primaryCurrency: "MXN",
+    accent: "bg-gradient-to-br from-[#004481] via-[#002f5a] to-[#001c36]",
+    balances: [
+      { currency: "MXN", balance: 12500 },
+      { currency: "USD", balance: 320 },
+      { currency: "EUR", balance: 40 },
+    ],
+    transactions: [
+      { id: "bbva-tx-1", description: "Nomina", category: "Ingreso", amount: 12500, currency: "MXN", date: "Hoy, 08:40" },
+      { id: "bbva-tx-2", description: "Conversion MXN a USD", category: "Divisas", amount: 320, currency: "USD", date: "Ayer, 12:15" },
+    ],
+  },
+  {
+    id: "santander-001",
+    bankName: "Santander",
+    type: "Debito",
+    cardLast4: "1298",
+    owner: "USUARIO UPAY",
+    primaryCurrency: "MXN",
+    accent: "bg-gradient-to-br from-[#ec0000] via-[#b30000] to-[#730000]",
+    balances: [
+      { currency: "MXN", balance: 8500 },
+      { currency: "USD", balance: 120 },
+      { currency: "EUR", balance: 0 },
+    ],
+    transactions: [
+      { id: "santander-tx-1", description: "Deposito Santander", category: "Ingreso", amount: 8500, currency: "MXN", date: "Hoy, 10:05" },
+      { id: "santander-tx-2", description: "Compra internacional", category: "Tarjeta", amount: -32, currency: "USD", date: "Ayer, 19:30" },
+    ],
+  },
+  {
+    id: "banorte-001",
+    bankName: "Banorte",
+    type: "Debito",
+    cardLast4: "7714",
+    owner: "USUARIO UPAY",
+    primaryCurrency: "MXN",
+    accent: "bg-gradient-to-br from-[#eb1c24] via-[#a30b10] to-[#690306]",
+    balances: [
+      { currency: "MXN", balance: 6300 },
+      { currency: "USD", balance: 0 },
+      { currency: "EUR", balance: 280 },
+    ],
+    transactions: [
+      { id: "banorte-tx-1", description: "Ahorro mensual", category: "Ingreso", amount: 6300, currency: "MXN", date: "28 Jun, 08:10" },
+      { id: "banorte-tx-2", description: "Conversion MXN a EUR", category: "Divisas", amount: 280, currency: "EUR", date: "27 Jun, 15:45" },
+    ],
+  },
 ];

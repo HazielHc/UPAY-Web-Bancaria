@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+﻿import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {   //se importan los iconos de lucide-react
   ArrowLeftRight,
-  BarChart3,
   Bell,
   ChevronRight,
   Check,
@@ -18,15 +17,16 @@ import {   //se importan los iconos de lucide-react
   ShieldPlus,
   Shuffle,
   UserPlus,
-  WalletCards,
   X,
 } from "lucide-react";
 import { Flag } from "../components/Flag";
+import upayLogo from "../assets/upay-logo.svg";
 import {
   getDashboardData,
-  addMoney,
-  transferMoney,
-  exchangeCurrency,
+  addMoneyToScopedAccount,
+  exchangeScopedCurrency,
+  getDashboardDataForBankAccount,
+  transferFromScopedAccount,
   addContact,
 } from "../services/dashboardService";
 
@@ -99,11 +99,13 @@ const getCurrencyFlag = (currency) => currencyFlagMap[currency] || "";
 const getCurrencySymbol = (currency) => currencySymbolMap[currency] || "";
 const getCurrencyLabel = (account) => currencyLabelMap[account?.currency] || account?.name || "";
 const getCurrencyOptionLabel = (account) => currencyOptionLabelById[account.id] || `${account.name} (${account.currency})`;
+const maskAccountNumber = (last4) => `.........${String(last4).slice(-4)}`;
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { accountId: bankAccountId } = useParams();
   const [data, setData] = useState(null);
-  const [activeAccountId, setActiveAccountId] = useState("mxn-main");
+  const [activeAccountId, setActiveAccountId] = useState("");
   const [hideBalance, setHideBalance] = useState(false);
 
   // Estados de control para Modales
@@ -126,15 +128,18 @@ export function Dashboard() {
 
   // Carga inicial de datos mock
   useEffect(() => {
-    getDashboardData().then((res) => {
+    const dataLoader = bankAccountId ? getDashboardDataForBankAccount(bankAccountId) : getDashboardData();
+
+    dataLoader.then((res) => {
       setData(res);
       if (res.accounts.length > 0) {
+        setActiveAccountId(res.accounts[0].id);
         setSelectedDestAccountId(res.accounts[0].id);
         setExchangeFromId(res.accounts[0].id);
         setExchangeToId(res.accounts[1]?.id || res.accounts[0].id);
       }
     });
-  }, []);
+  }, [bankAccountId]);
 
   if (!data) {
     return (
@@ -162,7 +167,7 @@ export function Dashboard() {
     e.preventDefault();
     if (!amountInput || isNaN(amountInput) || parseFloat(amountInput) <= 0) return;
     try {
-      const updatedData = await addMoney(selectedDestAccountId, amountInput);
+      const updatedData = await addMoneyToScopedAccount(selectedDestAccountId, amountInput);
       setData(updatedData);
       setShowAddModal(false);
       setAmountInput("");
@@ -178,7 +183,7 @@ export function Dashboard() {
     e.preventDefault();
     if (!sendAmount || isNaN(sendAmount) || parseFloat(sendAmount) <= 0 || !sendContactId) return;
     try {
-      const updatedData = await transferMoney(activeAccountId, sendContactId, sendAmount);
+      const updatedData = await transferFromScopedAccount(activeAccountId, sendContactId, sendAmount);
       setData(updatedData);
       setShowSendModal(false);
       setSendAmount("");
@@ -221,7 +226,7 @@ export function Dashboard() {
     const calculatedToAmount = parseFloat((parseFloat(exchangeFromAmount) * rate).toFixed(2));
 
     try {
-      const updatedData = await exchangeCurrency(exchangeFromId, exchangeToId, exchangeFromAmount, calculatedToAmount);
+      const updatedData = await exchangeScopedCurrency(exchangeFromId, exchangeToId, exchangeFromAmount);
       setData(updatedData);
       setShowExchangeModal(false);
       setExchangeFromAmount("");
@@ -243,7 +248,7 @@ export function Dashboard() {
     e.preventDefault();
     if (!newContactName.trim()) return;
     const initials = newContactName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-    const mockAccount = `${activeAccount.currency} •••• ${Math.floor(1000 + Math.random() * 9000)}`;
+    const mockAccount = `${activeAccount.currency} ${maskAccountNumber(Math.floor(1000 + Math.random() * 9000))}`;
     const updatedData = await addContact(newContactName, initials, mockAccount);
     setData(updatedData);
     setNewContactName("");
@@ -268,10 +273,7 @@ export function Dashboard() {
   const currentBalance = formatBalance(activeAccount.balance, activeAccount.currency);
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#16132d] text-white">
-      {/* Fondo con radiales difuminados al estilo premium mockup */}
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(80,70,229,0.15),transparent_40%),radial-gradient(circle_at_80%_80%,rgba(139,125,255,0.1),transparent_45%)]" />
-
+    <main className="min-h-screen overflow-hidden bg-[#0f0d2c] text-white">
       {/* Notificación Flotante */}
       <AnimatePresence>
         {notification && (
@@ -289,27 +291,39 @@ export function Dashboard() {
         )}
       </AnimatePresence>
 
-      <div className="relative z-10 grid min-h-screen lg:grid-cols-[250px_1fr]">
+      <div className="relative z-10 grid min-h-screen overflow-hidden rounded-[28px] border border-white/5 shadow-2xl lg:grid-cols-[250px_1fr]">
         
         {/* ================================= SIDEBAR LATERAL ================================= */}
         <aside className="hidden border-r border-white/5 bg-[#0f0d2c] p-6 lg:flex lg:flex-col justify-between">
           <div className="space-y-8">
-            {/* Logo Estilo Revolut */}
-            <div className="flex items-center gap-3">
-              <span className="grid size-10 place-items-center rounded-xl bg-indigo-600 text-2xl font-black tracking-tighter text-white shadow-lg shadow-indigo-600/30">
-                U
-              </span>
-              <span className="text-xl font-bold tracking-tight text-white/90">UPAY</span>
+            {/* Logo UPAY */}
+            <div className="pl-4">
+              <img
+                src={upayLogo}
+                alt="UPAY"
+                className="h-12 w-auto select-none"
+                draggable="false"
+              />
             </div>
 
             {/* Navegación */}
             <nav className="space-y-2">
               <button
-                className="flex h-12 w-full items-center gap-3 rounded-xl bg-indigo-600/10 border border-indigo-500/20 px-4 text-sm font-bold text-white transition-all shadow-md shadow-indigo-950/20"
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-transparent px-4 text-sm font-bold text-white/60 transition hover:bg-white/5 hover:text-white"
+                onClick={() => navigate("/")}
                 type="button"
               >
-                <Home size={18} className="text-indigo-400" />
+                <Home size={18} />
                 Inicio
+              </button>
+
+              <button
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-transparent px-4 text-sm font-bold text-white/60 transition hover:bg-white/5 hover:text-white"
+                onClick={() => navigate("/profile")}
+                type="button"
+              >
+                <UserPlus size={18} />
+                Perfil
               </button>
               
               <button
@@ -365,6 +379,15 @@ export function Dashboard() {
             {/* Acciones Rápidas Superior */}
             <div className="ml-auto flex items-center gap-3">
               <button
+                className="inline-flex h-12 items-center gap-2 rounded-full border border-white/5 bg-[#1e1a44] px-4 text-sm font-bold text-white/75 transition hover:bg-[#282258] hover:text-white lg:hidden"
+                onClick={() => navigate("/profile")}
+                type="button"
+              >
+                <UserPlus size={18} />
+                Perfil
+              </button>
+
+              <button
                 className="relative grid size-12 place-items-center rounded-full bg-[#1e1a44] border border-white/5 text-white/80 transition hover:bg-[#282258]"
                 type="button"
                 onClick={() => triggerNotification("No tienes notificaciones pendientes.")}
@@ -372,15 +395,6 @@ export function Dashboard() {
                 <Bell size={20} />
                 <span className="absolute right-3.5 top-3.5 size-2 rounded-full bg-rose-500" />
               </button>
-
-              {/* Avatar Simulador */}
-              <div className="size-12 overflow-hidden rounded-full border border-white/10 bg-indigo-900 shadow-md">
-                <img
-                  src="https:"
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                />
-              </div>
 
               <button
                 className="grid size-12 place-items-center rounded-full bg-[#1e1a44] border border-white/5 text-white/80 transition hover:bg-[#282258]"
@@ -971,3 +985,4 @@ export function Dashboard() {
     </main>
   );
 }
+

@@ -15,6 +15,7 @@ export function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/profile" element={<Profile />} />
       </Route>
+      <Route path="/dashboard/:accountId" element={<Dashboard />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
