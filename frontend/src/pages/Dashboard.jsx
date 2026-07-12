@@ -1,6 +1,8 @@
 ﻿import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { getContacts, addContact as saveContact } from "../services/contactsService";
+import { createTransfer } from "../services/transactionService";
 import {   //se importan los iconos de lucide-react
   ArrowLeftRight,
   Bell,
@@ -21,8 +23,8 @@ import {   //se importan los iconos de lucide-react
 } from "lucide-react";
 import { Flag } from "../components/Flag";
 import upayLogo from "../assets/upay-logo.svg";
+import { getDashboardData } from "../services/accountService";
 import {
-  getDashboardData,
   addMoneyToScopedAccount,
   exchangeScopedCurrency,
   getDashboardDataForBankAccount,
@@ -123,23 +125,29 @@ export function Dashboard() {
   const [exchangeToId, setExchangeToId] = useState("");
   const [exchangeFromAmount, setExchangeFromAmount] = useState("");
   const [newContactName, setNewContactName] = useState("");
+  const [newContactAccountId, setNewContactAccountId] = useState("");
 
   const [notification, setNotification] = useState("");
 
   // Carga inicial de datos mock
-  useEffect(() => {
-    const dataLoader = bankAccountId ? getDashboardDataForBankAccount(bankAccountId) : getDashboardData();
+useEffect(() => {
+  const dataLoader = bankAccountId ? getDashboardDataForBankAccount(bankAccountId) : getDashboardData();
 
-    dataLoader.then((res) => {
-      setData(res);
+  dataLoader
+    .then((res) => {
+      const contacts = getContacts();
+      setData({ ...res, transferContacts: contacts });
       if (res.accounts.length > 0) {
         setActiveAccountId(res.accounts[0].id);
         setSelectedDestAccountId(res.accounts[0].id);
         setExchangeFromId(res.accounts[0].id);
         setExchangeToId(res.accounts[1]?.id || res.accounts[0].id);
       }
+    })
+    .catch((err) => {
+      console.error("Error cargando dashboard:", err); 
     });
-  }, [bankAccountId]);
+}, [bankAccountId]);
 
   if (!data) {
     return (
@@ -178,21 +186,34 @@ export function Dashboard() {
     }
   };
 
-  // Acciones: Enviar dinero (Submit)
-  const handleSendMoneySubmit = async (e) => {
-    e.preventDefault();
-    if (!sendAmount || isNaN(sendAmount) || parseFloat(sendAmount) <= 0 || !sendContactId) return;
-    try {
-      const updatedData = await transferFromScopedAccount(activeAccountId, sendContactId, sendAmount);
-      setData(updatedData);
-      setShowSendModal(false);
-      setSendAmount("");
-      const targetContact = data.transferContacts.find((c) => c.id === sendContactId);
-      triggerNotification(`Transferencia de $${sendAmount} ${activeAccount.currency} enviada a ${targetContact.name}.`);
-    } catch (err) {
-      alert(err.message || "Error al realizar transferencia");
+const handleSendMoneySubmit = async (e) => {
+  e.preventDefault();
+  if (!sendAmount || isNaN(sendAmount) || parseFloat(sendAmount) <= 0 || !sendContactId) return;
+
+  const contact = data.transferContacts.find((c) => c.id === sendContactId); // ← corregido
+  try {
+    const result = await createTransfer({
+      fromAccountId: activeAccountId,
+      toAccountId: contact.accountId,
+      amount: sendAmount,
+      currency: activeAccount.currency,
+      description: `Transferencia a ${contact.name}`,
+    });
+
+    if (result.status === "failed") {
+      alert(`Transferencia rechazada: ${result.reason ?? "motivo desconocido"}`);
+      return;
     }
-  };
+
+    const refreshed = await getDashboardData();
+    setData((prev) => ({ ...refreshed, transferContacts: prev.transferContacts })); // ← corregido
+    setShowSendModal(false);
+    setSendAmount("");
+    triggerNotification(`Transferencia de $${sendAmount} ${activeAccount.currency} enviada a ${contact.name}.`);
+  } catch (err) {
+    alert(err.message || "Error al realizar transferencia");
+  }
+};
 
   // Acciones: Convertir divisas (Submit)
   const handleExchangeSubmit = async (e) => {
@@ -242,16 +263,16 @@ export function Dashboard() {
     setExchangeFromId(exchangeToId);
     setExchangeToId(temp);
   };
-
-  // Registrar nuevo contacto
-  const handleAddContactSubmit = async (e) => {
+    const handleAddContactSubmit = async (e) => {
     e.preventDefault();
-    if (!newContactName.trim()) return;
-    const initials = newContactName.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
-    const mockAccount = `${activeAccount.currency} ${maskAccountNumber(Math.floor(1000 + Math.random() * 9000))}`;
-    const updatedData = await addContact(newContactName, initials, mockAccount);
-    setData(updatedData);
+    if (!newContactName.trim() || !newContactAccountId.trim()) return;
+
+    const displayAccount = `Cuenta ${newContactAccountId.slice(0, 8)}...`; // texto corto para mostrar
+    const updatedContacts = saveContact(newContactName, newContactAccountId, displayAccount);
+
+    setData((prev) => ({ ...prev, transferContacts: updatedContacts }));
     setNewContactName("");
+    setNewContactAccountId("");
     triggerNotification(`Contacto ${newContactName} agregado.`);
   };
 
@@ -338,6 +359,15 @@ export function Dashboard() {
               >
                 <ArrowLeftRight size={18} />
                 Transferir
+              </button>
+
+              <button
+                className="flex h-12 w-full items-center gap-3 rounded-xl border border-transparent px-4 text-sm font-bold text-white/60 transition hover:bg-white/5 hover:text-white"
+                type="button"
+                onClick={() => setShowContactsDrawer(true)}
+              >
+                <UserPlus size={18} />
+                Contactos
               </button>
               
             </nav>
@@ -939,6 +969,13 @@ export function Dashboard() {
 
               {/* Formulario rápido para agregar contactos */}
               <form className="mt-6 flex gap-2" onSubmit={handleAddContactSubmit}>
+                <input
+                  value={newContactAccountId}
+                  onChange={(e) => setNewContactAccountId(e.target.value)}
+                  placeholder="ID de cuenta destino"
+                  required
+                  className="w-full h-10 rounded-xl bg-white/5 border border-white/10 px-3 text-xs outline-none focus:border-indigo-500 text-white"
+                />
                 <input
                   value={newContactName}
                   onChange={(e) => setNewContactName(e.target.value)}
