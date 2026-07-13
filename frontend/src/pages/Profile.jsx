@@ -69,7 +69,7 @@ const getCurrencyFlag = (currency) => currencyFlagMap[currency] || "";
 const getCurrencySymbol = (currency) => currencySymbolMap[currency] || "";
 const getCurrencyLabel = (account) => currencyLabelMap[account?.currency] || account?.name || "";
 const maskAccountNumber = (last4) => `.........${String(last4).slice(-4)}`;
-l
+
 function ContactlessWave({ className = "w-5 h-5 text-white/70" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
