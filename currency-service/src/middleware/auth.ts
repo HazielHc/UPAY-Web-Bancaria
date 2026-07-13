@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 
 export interface AuthedRequest extends Request {
     profileId?: string;
-    rawToken?: string;
 }
 
 export function authenticate(req: AuthedRequest, res: Response, next: NextFunction) {
@@ -11,14 +10,13 @@ export function authenticate(req: AuthedRequest, res: Response, next: NextFuncti
     if (!header?.startsWith('Bearer ')) {
         return res.status(401).json({ error: 'Missing or invalid Authorization header' });
     }
+
     const token = header.slice('Bearer '.length);
-    req.rawToken = token;
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET as string) as jwt.JwtPayload;
         req.profileId = payload.userId as string;
-
         if (!req.profileId) {
-        return res.status(401).json({ error: 'Token has no profile identifier' });
+        return res.status(401).json({ error: 'Token has no user identifier' });
         }
         next();
     } catch {

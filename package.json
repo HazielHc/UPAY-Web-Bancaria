@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently -n auth,account,transaction -c blue,green,purple \"pnpm --filter ./auth-service dev\" \"pnpm --filter ./account-service dev\" \"pnpm --filter ./transaction-service dev\""
+    "dev": "concurrently -n auth,account,transaction,currency -c blue,green,purple,orange \"pnpm --filter ./auth-service dev\" \"pnpm --filter ./account-service dev\" \"pnpm --filter ./transaction-service dev\" \"pnpm --filter ./currency-service dev\""
   },
   "keywords": [],
   "author": "",

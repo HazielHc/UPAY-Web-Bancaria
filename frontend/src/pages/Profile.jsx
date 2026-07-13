@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState } from "react";
+import { getAllUserCards } from "../services/accountService";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,26 +17,26 @@ import {
 import { getProfile } from "../services/authService";
 import { getDashboardData } from "../services/dashboardService";
 import { Flag } from "../components/Flag";
+import { AddAccountModal } from "../components/AddAccountModal";
 import upayLogo from "../assets/upay-logo.svg";
 
-const demoCards = [
-  {
-    id: "bbva-demo-4832",
-    accountId: "bbva-001",
-    bankName: "BBVA",
-    brand: "VISA",
-    last4: "4832",
-    accent: "bg-gradient-to-br from-[#004481] via-[#002f5a] to-[#001c36] text-white",
-  },
-  {
-    id: "banorte-demo-7714",
-    accountId: "banorte-001",
-    bankName: "Banorte",
-    brand: "VISA",
-    last4: "7714",
-    accent: "bg-gradient-to-br from-[#eb1c24] via-[#a30b10] to-[#690306] text-white",
-  },
-];
+const BANK_ACCENT_MAP = {
+  bbva: "bg-gradient-to-br from-[#004481] via-[#002f5a] to-[#001c36] text-white",
+  banorte: "bg-gradient-to-br from-[#eb1c24] via-[#a30b10] to-[#690306] text-white",
+  santander: "bg-gradient-to-br from-[#ec0000] via-[#a30000] to-[#5c0000] text-white",
+  banamex: "bg-gradient-to-br from-[#00954c] via-[#00753c] to-[#003d1f] text-white",
+  hsbc: "bg-gradient-to-br from-[#db0011] via-[#990009] to-[#4d0004] text-white",
+  nu: "bg-gradient-to-br from-[#820ad1] via-[#5c0a97] to-[#2e0550] text-white",
+};
+
+const DEFAULT_CARD_ACCENT = "bg-gradient-to-br from-[#3a3170] via-[#252047] to-[#14112b] text-white";
+
+const getBankAccent = (bankName) => {
+  if (!bankName) return DEFAULT_CARD_ACCENT;
+  const normalized = bankName.trim().toLowerCase();
+  const matchedKey = Object.keys(BANK_ACCENT_MAP).find((key) => normalized.includes(key));
+  return matchedKey ? BANK_ACCENT_MAP[matchedKey] : DEFAULT_CARD_ACCENT;
+};
 
 const currencyFlagMap = {
   MXN: "MX",
@@ -49,27 +50,26 @@ const currencyFlagMap = {
 const currencySymbolMap = {
   MXN: "$",
   USD: "US$",
-  EUR: "â‚¬",
-  GBP: "Â£",
+  EUR: "€",
+  GBP: "£",
   CHF: "CHF",
-  JPY: "Â¥",
+  JPY: "¥",
 };
 
 const currencyLabelMap = {
   MXN: "Peso mexicano",
-  USD: "DÃ³lar estadounidense",
+  USD: "Dólar estadounidense",
   EUR: "Euro",
   GBP: "Libra esterlina",
   CHF: "Franco suizo",
-  JPY: "Yen japonÃ©s",
+  JPY: "Yen japonés",
 };
 
 const getCurrencyFlag = (currency) => currencyFlagMap[currency] || "";
 const getCurrencySymbol = (currency) => currencySymbolMap[currency] || "";
 const getCurrencyLabel = (account) => currencyLabelMap[account?.currency] || account?.name || "";
 const maskAccountNumber = (last4) => `.........${String(last4).slice(-4)}`;
-
-// Reusable SVG for the contactless wave symbol
+l
 function ContactlessWave({ className = "w-5 h-5 text-white/70" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -80,10 +80,9 @@ function ContactlessWave({ className = "w-5 h-5 text-white/70" }) {
   );
 }
 
-// Reusable component for the realistic chip
 function CardChip({ isActive }) {
   return (
-    <div className={`relative w-10 h-7.5 rounded bg-gradient-to-br from-[#dfc180] via-[#e2b755] to-[#bfa05d] p-0.5 shadow-inner overflow-hidden border border-[#d6b25e]/30 ${isActive ? "opacity-100" : "opacity-70"}`}>
+    <div className={`relative w-10 h-7 rounded bg-gradient-to-br from-[#dfc180] via-[#e2b755] to-[#bfa05d] p-0.5 shadow-inner overflow-hidden border border-[#d6b25e]/30 ${isActive ? "opacity-100" : "opacity-70"}`}>
       {/* Grid line texture */}
       <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-px opacity-20">
         {Array.from({ length: 9 }).map((_, i) => (
@@ -101,9 +100,11 @@ export function Profile() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
-  const [activeCardIndex, setActiveCardIndex] = useState(0); // default active is BBVA
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [carouselDirection, setCarouselDirection] = useState(0);
   const [notification, setNotification] = useState("");
+  const [cards, setCards] = useState([]);
+  const [isAddAccountModalOpen, setIsAddAccountModalOpen] = useState(false);
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -114,7 +115,6 @@ export function Profile() {
     const loadProfileAndData = async () => {
       try {
         const token = localStorage.getItem("token");
-
         if (!token) {
           navigate("/login");
           return;
@@ -125,6 +125,9 @@ export function Profile() {
 
         const dash = await getDashboardData();
         setDashboardData(dash);
+
+        const userCards = await getAllUserCards();
+        setCards(userCards);
       } catch (err) {
         console.error(err);
         localStorage.removeItem("token");
@@ -135,7 +138,8 @@ export function Profile() {
     loadProfileAndData();
   }, [navigate]);
 
-  const activeCard = demoCards[activeCardIndex];
+  const hasCards = cards.length > 0;
+  const activeCard = cards[activeCardIndex];
   const userName = profile?.user?.username || profile?.user?.name || "Usuario";
 
   const triggerNotification = (message) => {
@@ -148,14 +152,14 @@ export function Profile() {
   const goToPreviousCard = () => {
     setCarouselDirection(-1);
     setActiveCardIndex((currentIndex) =>
-      currentIndex === 0 ? demoCards.length - 1 : currentIndex - 1
+      currentIndex === 0 ? cards.length - 1 : currentIndex - 1
     );
   };
 
   const goToNextCard = () => {
     setCarouselDirection(1);
     setActiveCardIndex((currentIndex) =>
-      currentIndex === demoCards.length - 1 ? 0 : currentIndex + 1
+      currentIndex === cards.length - 1 ? 0 : currentIndex + 1
     );
   };
 
@@ -169,26 +173,49 @@ export function Profile() {
     });
   };
 
-  const visibleCards = demoCards.length === 2
+  const refreshCards = async () => {
+    try {
+      const userCards = await getAllUserCards();
+      setCards(userCards);
+      return userCards;
+    } catch (err) {
+      console.error(err);
+      return cards;
+    }
+  };
+
+  const handleAccountCreated = async (newAccount) => {
+    const userCards = await refreshCards();
+    const newIndex = userCards.findIndex((c) => c.accountId === newAccount?.id);
+    setActiveCardIndex(newIndex >= 0 ? newIndex : Math.max(userCards.length - 1, 0));
+    triggerNotification(`Cuenta en ${newAccount?.bank_name ?? "el banco"} creada correctamente.`);
+  };
+
+  const selectCard = (index) => {
+    if (index === activeCardIndex) {
+      openCardDashboard();
+      return;
+    }
+    setCarouselDirection(index > activeCardIndex ? 1 : -1);
+    setActiveCardIndex(index);
+  };
+
+  const visibleCards = !hasCards
+    ? []
+    : cards.length === 1
+    ? [{ ...cards[0], offset: 0 }]
+    : cards.length === 2
     ? [
-        { ...demoCards[activeCardIndex], offset: 0 },
-        {
-          ...demoCards[activeCardIndex === 0 ? 1 : 0],
-          offset: activeCardIndex === 0 ? 1 : -1,
-        },
+        { ...cards[activeCardIndex], offset: 0 },
+        { ...cards[activeCardIndex === 0 ? 1 : 0], offset: activeCardIndex === 0 ? 1 : -1 },
       ].sort((a, b) => a.offset - b.offset)
     : [-1, 0, 1].map((offset) => {
-        const index = (activeCardIndex + offset + demoCards.length) % demoCards.length;
-
-        return {
-          ...demoCards[index],
-          offset,
-        };
+        const index = (activeCardIndex + offset + cards.length) % cards.length;
+        return { ...cards[index], offset };
       });
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#0f0d2c] text-white">
-      {/* Floating Notification */}
       <AnimatePresence>
         {notification && (
           <motion.div
@@ -206,7 +233,7 @@ export function Profile() {
       </AnimatePresence>
 
       <div className="relative z-10 grid min-h-screen overflow-hidden rounded-[28px] border border-white/5 shadow-2xl lg:grid-cols-[250px_1fr]">
-        
+
         {/* ================================= SIDEBAR LATERAL ================================= */}
         <aside className="hidden border-r border-white/5 bg-[#0f0d2c] p-6 lg:flex lg:flex-col justify-between">
           <div className="space-y-8">
@@ -220,7 +247,7 @@ export function Profile() {
               />
             </div>
 
-            {/* NavegaciÃ³n */}
+            {/* Navegación */}
             <nav className="space-y-2">
               <button
                 className="flex h-12 w-full items-center gap-3 rounded-xl border border-transparent px-4 text-sm font-bold text-white/60 transition hover:bg-white/5 hover:text-white"
@@ -257,7 +284,7 @@ export function Profile() {
 
         {/* ================================= CUERPO CENTRAL ================================= */}
         <section className="flex flex-col min-w-0 p-6 lg:p-8 space-y-6">
-          
+
           {/* HEADER SUPERIOR */}
           <header className="flex flex-wrap items-center justify-between gap-4">
             {/* Buscador */}
@@ -269,8 +296,6 @@ export function Profile() {
                 type="search"
               />
             </div>
-
-            {/* Acciones RÃ¡pidas Superior */}
             <div className="ml-auto flex items-center gap-3">
               <button
                 className="relative grid size-12 place-items-center rounded-full bg-[#1e1a44] border border-white/5 text-white/80 transition hover:bg-[#282258]"
@@ -284,185 +309,182 @@ export function Profile() {
               <button
                 className="grid size-12 place-items-center rounded-full bg-[#1e1a44] border border-white/5 text-white/80 transition hover:bg-[#282258]"
                 type="button"
-                onClick={() => triggerNotification("ConfiguraciÃ³n de perfil cargada.")}
+                onClick={() => triggerNotification("Configuración de perfil cargada.")}
               >
                 <Settings size={20} />
               </button>
 
               <button
                 className="inline-flex h-12 items-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-bold text-white shadow-xl shadow-indigo-600/20 transition hover:bg-indigo-500"
-                onClick={() => {
-                  navigate("/dashboard");
-                  triggerNotification("Abriendo panel para agregar tarjeta.");
-                }}
+                onClick={() => setIsAddAccountModalOpen(true)}
                 type="button"
               >
                 <Plus size={18} />
-                <span>Agregar tarjeta</span>
+                <span>Agregar cuenta</span>
               </button>
             </div>
           </header>
 
-          {/* CONTENEDOR CENTRAL DE TARJETAS */}
-          <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#403585] via-[#2c235a] to-[#120d29] p-8 md:p-12 shadow-2xl flex flex-col items-center justify-center">
-            {/* Ambient gradients behind cards */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(139,125,255,0.36),transparent_44%)] pointer-events-none" />
-            <div className="absolute -right-24 -top-24 h-[300px] w-[560px] rotate-[-12deg] rounded-[40%] bg-gradient-to-r from-indigo-500/10 via-purple-500/20 to-transparent blur-2xl pointer-events-none" />
-
-            <div className="relative z-10 flex items-center justify-between w-full gap-4">
-              {/* Previous button */}
+          {!hasCards ? (
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-12 text-center">
+              <p className="text-white/60 text-sm">No tienes tarjetas registradas todavía.</p>
+              <p className="text-white/40 text-xs mt-2">Agrega una cuenta bancaria para obtener tu primera tarjeta.</p>
               <button
-                className="grid size-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/60 shadow-md transition hover:bg-white/15 hover:text-white focus:outline-none"
-                onClick={goToPreviousCard}
-                title="Tarjeta anterior"
+                className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-indigo-600 px-5 text-sm font-bold text-white shadow-xl shadow-indigo-600/20 transition hover:bg-indigo-500"
+                onClick={() => setIsAddAccountModalOpen(true)}
                 type="button"
               >
-                <ChevronLeft size={22} />
+                <Plus size={16} />
+                <span>Agregar cuenta</span>
               </button>
+            </div>
+          ) : (
+            <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#403585] via-[#2c235a] to-[#120d29] p-8 md:p-12 shadow-2xl flex flex-col items-center justify-center">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(139,125,255,0.36),transparent_44%)] pointer-events-none" />
+              <div className="absolute -right-24 -top-24 h-[300px] w-[560px] rotate-[-12deg] rounded-[40%] bg-gradient-to-r from-indigo-500/10 via-purple-500/20 to-transparent blur-2xl pointer-events-none" />
 
-              {/* Cards center display area */}
-              <div className="relative h-[230px] flex-1 min-w-0 overflow-hidden py-4 sm:h-[300px]">
-                {visibleCards.map((card) => {
-                  const isActive = card.offset === 0;
-                  const isNu = card.bankName === "nu";
-                  const slidePosition = card.offset === 0
-                    ? "-50%"
-                    : card.offset > 0
-                      ? "calc(-50% + 360px)"
-                      : "calc(-50% - 360px)";
-                  const cardScale = isActive ? 1 : 0.74;
-                  const cardOpacity = isActive ? 1 : 0.68;
+              <div className="relative z-10 flex items-center justify-between w-full gap-4">
+                <button
+                  className="grid size-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/60 shadow-md transition hover:bg-white/15 hover:text-white focus:outline-none"
+                  onClick={goToPreviousCard}
+                  title="Tarjeta anterior"
+                  type="button"
+                >
+                  <ChevronLeft size={22} />
+                </button>
 
-                  let cardStyles = {
-                    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.1)',
-                  };
+                <div className="relative h-[230px] flex-1 min-w-0 overflow-hidden py-4 sm:h-[300px]">
+                  {visibleCards.map((card) => {
+                    const isActive = card.offset === 0;
+                    const isNu = card.bankName?.toLowerCase() === "nu";
+                    const accent = getBankAccent(card.bankName);
+                    const slidePosition = card.offset === 0
+                      ? "-50%"
+                      : card.offset > 0
+                        ? "calc(-50% + 360px)"
+                        : "calc(-50% - 360px)";
+                    const cardScale = isActive ? 1 : 0.74;
+                    const cardOpacity = isActive ? 1 : 0.68;
 
-                  if (isActive) {
-                    cardStyles.boxShadow = 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.18), 0 18px 40px rgba(0, 0, 0, 0.28)';
-                  }
+                    let cardStyles = {
+                      boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 12px rgba(0, 0, 0, 0.1)',
+                    };
 
-                  return (
-                    <motion.button
-                      animate={{
-                        opacity: cardOpacity,
-                        scale: cardScale,
-                        x: slidePosition,
-                        y: "-50%",
-                      }}
-                      className={`absolute left-1/2 top-1/2 h-[200px] w-[320px] overflow-hidden rounded-2xl p-5 text-left sm:h-[260px] sm:w-[440px] sm:p-7 ${card.accent} ${
-                        isActive
-                          ? "z-10 cursor-default opacity-100"
-                          : "z-0 cursor-pointer opacity-60"
-                      }`}
-                      initial={false}
-                      key={card.id}
-                      onClick={() => {
-                        if (isActive) {
-                          openCardDashboard();
-                          return;
-                        }
+                    if (isActive) {
+                      cardStyles.boxShadow = 'inset 0 0 0 1.5px rgba(255, 255, 255, 0.18), 0 18px 40px rgba(0, 0, 0, 0.28)';
+                    }
 
-                        setCarouselDirection(card.offset > 0 ? 1 : -1);
-                        setActiveCardIndex(demoCards.findIndex((demoCard) => demoCard.id === card.id));
-                      }}
-                      style={cardStyles}
-                      transition={{
-                        opacity: {
-                          duration: 0.52,
-                          ease: [0.22, 1, 0.36, 1],
-                        },
-                        scale: {
-                          duration: 0.62,
-                          ease: [0.22, 1, 0.36, 1],
-                        },
-                        x: {
-                          duration: 0.62,
-                          ease: [0.22, 1, 0.36, 1],
-                        },
-                        y: { duration: 0 },
-                      }}
-                      type="button"
-                      title={isActive ? "Abrir dashboard" : `Seleccionar ${card.bankName}`}
-                    >
-                      <div className="relative z-10 flex h-full flex-col justify-between">
-                        {/* Top card block */}
-                        <div className="flex items-start justify-between">
-                          <p className={`font-black tracking-tight text-white select-none ${
-                            isNu ? "text-2xl sm:text-3xl lowercase" : "text-xl sm:text-2xl"
-                          }`}>
-                            {card.bankName}
-                          </p>
-                        </div>
+                    return (
+                      <motion.button
+                        animate={{
+                          opacity: cardOpacity,
+                          scale: cardScale,
+                          x: slidePosition,
+                          y: "-50%",
+                        }}
+                        className={`absolute left-1/2 top-1/2 h-[200px] w-[320px] overflow-hidden rounded-2xl p-5 text-left sm:h-[260px] sm:w-[440px] sm:p-7 ${accent} ${
+                          isActive
+                            ? "z-10 cursor-default opacity-100"
+                            : "z-0 cursor-pointer opacity-60"
+                        }`}
+                        initial={false}
+                        key={card.id}
+                        onClick={() => selectCard(cards.findIndex((c) => c.id === card.id))}
+                        style={cardStyles}
+                        transition={{
+                          opacity: {
+                            duration: 0.52,
+                            ease: [0.22, 1, 0.36, 1],
+                          },
+                          scale: {
+                            duration: 0.62,
+                            ease: [0.22, 1, 0.36, 1],
+                          },
+                          x: {
+                            duration: 0.62,
+                            ease: [0.22, 1, 0.36, 1],
+                          },
+                          y: { duration: 0 },
+                        }}
+                        type="button"
+                        title={isActive ? "Abrir dashboard" : `Seleccionar ${card.bankName}`}
+                      >
+                        <div className="relative z-10 flex h-full flex-col justify-between">
+                          {/* Top card block */}
+                          <div className="flex items-start justify-between">
+                            <p className={`font-black tracking-tight text-white select-none ${
+                              isNu ? "text-2xl sm:text-3xl lowercase" : "text-xl sm:text-2xl"
+                            }`}>
+                              {card.bankName}
+                            </p>
+                          </div>
 
-                        {/* Middle card block (Chip and Contactless logo) */}
-                        <div className="flex items-center gap-4 my-auto">
-                          <CardChip isActive={isActive} />
-                          <ContactlessWave className="w-5 h-5 sm:w-6 h-6 text-white/50" />
-                        </div>
+                          <div className="flex items-center gap-4 my-auto">
+                            <CardChip isActive={isActive} />
+                            <ContactlessWave className="w-5 h-5 sm:w-6 sm:h-6 text-white/50" />
+                          </div>
 
-                        {/* Bottom card block */}
-                        <div>
-                          <p className="font-mono text-xs sm:text-lg font-medium tracking-[0.22em] text-white">
-                            {maskAccountNumber(card.last4)}
-                          </p>
+                          <div>
+                            <p className="font-mono text-xs sm:text-lg font-medium tracking-[0.22em] text-white">
+                              {maskAccountNumber(card.last4)}
+                            </p>
 
-                          <div className="mt-5 flex items-end justify-end">
-                            {/* Brand Card Logo */}
-                            <div className="h-5 sm:h-7 flex items-center justify-end">
-                              {card.brand === "mastercard" ? (
-                                <div className="relative w-8 h-5 sm:w-10 sm:h-6 flex items-center">
-                                  <span className="absolute left-0 block w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#eb001b]" />
-                                  <span className="absolute right-0 block w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#f79e1b] opacity-90" style={{ mixBlendMode: "screen" }} />
-                                </div>
-                              ) : (
-                                <span className="text-lg sm:text-xl font-black italic tracking-tighter text-white/90 leading-none select-none">
-                                  VISA
-                                </span>
-                              )}
+                            <div className="mt-5 flex items-end justify-end">
+                              {/* Brand Card Logo */}
+                              <div className="h-5 sm:h-7 flex items-center justify-end">
+                                {card.brand === "mastercard" ? (
+                                  <div className="relative w-8 h-5 sm:w-10 sm:h-6 flex items-center">
+                                    <span className="absolute left-0 block w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#eb001b]" />
+                                    <span className="absolute right-0 block w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#f79e1b] opacity-90" style={{ mixBlendMode: "screen" }} />
+                                  </div>
+                                ) : (
+                                  <span className="text-lg sm:text-xl font-black italic tracking-tighter text-white/90 leading-none select-none">
+                                    VISA
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
 
-              {/* Next button */}
-              <button
-                className="grid size-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/60 shadow-md transition hover:bg-white/15 hover:text-white focus:outline-none"
-                onClick={goToNextCard}
-                title="Siguiente tarjeta"
-                type="button"
-              >
-                <ChevronRight size={22} />
-              </button>
-            </div>
-
-            {/* Dots navigation */}
-            <div className="mt-8 flex justify-center gap-3">
-              {demoCards.map((card, index) => (
+                {/* Next button */}
                 <button
-                  aria-label={`Mostrar tarjeta ${card.bankName}`}
-                  className="relative h-1.5 w-8 rounded-full bg-white/15 transition hover:bg-white/25 focus:outline-none"
-                  key={card.id}
-                  onClick={() => {
-                    setCarouselDirection(index > activeCardIndex ? 1 : -1);
-                    setActiveCardIndex(index);
-                  }}
+                  className="grid size-12 shrink-0 place-items-center rounded-full border border-white/10 bg-white/5 text-white/60 shadow-md transition hover:bg-white/15 hover:text-white focus:outline-none"
+                  onClick={goToNextCard}
+                  title="Siguiente tarjeta"
                   type="button"
                 >
-                  {index === activeCardIndex && (
-                    <motion.span
-                      className="absolute inset-0 rounded-full bg-indigo-400 shadow-md shadow-indigo-400/30"
-                      layoutId="active-card-dot"
-                      transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                    />
-                  )}
+                  <ChevronRight size={22} />
                 </button>
-              ))}
-            </div>
-          </section>
+              </div>
+
+              {/* Dots navigation */}
+              <div className="mt-8 flex justify-center gap-3">
+                {cards.map((card, index) => (
+                  <button
+                    aria-label={`Mostrar tarjeta ${card.bankName}`}
+                    className="relative h-1.5 w-8 rounded-full bg-white/15 transition hover:bg-white/25 focus:outline-none"
+                    key={card.id}
+                    onClick={() => selectCard(index)}
+                    type="button"
+                  >
+                    {index === activeCardIndex && (
+                      <motion.span
+                        className="absolute inset-0 rounded-full bg-indigo-400 shadow-md shadow-indigo-400/30"
+                        layoutId="active-card-dot"
+                        transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
 
           {/* ================================= PANEL DE DIVISAS (BOTTOM) ================================= */}
           {false && dashboardData && (
@@ -474,8 +496,8 @@ export function Profile() {
             >
               <div className="mb-4 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-white/40">
                 <span>Divisas</span>
-                <button 
-                  onClick={() => triggerNotification("MÃ³dulo completo de divisas cargado.")}
+                <button
+                  onClick={() => triggerNotification("Módulo completo de divisas cargado.")}
                   className="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 cursor-pointer"
                 >
                   Ver todas <ChevronRight size={14} />
@@ -487,7 +509,7 @@ export function Profile() {
                   .filter((acc) => acc.id !== "mxn-remunerada")
                   .map((acc) => {
                     const symbol = getCurrencySymbol(acc.currency);
-                    
+
                     return (
                       <button
                         key={acc.id}
@@ -518,9 +540,9 @@ export function Profile() {
                     );
                   })}
 
-                {/* Card "Todas las divisas" */}
+                {/* divisas */}
                 <button
-                  onClick={() => triggerNotification("Mostrando catÃ¡logo completo de divisas.")}
+                  onClick={() => triggerNotification("Mostrando catálogo completo de divisas.")}
                   className="flex min-w-[200px] items-center gap-3 rounded-2xl bg-white/5 border border-transparent p-3 hover:bg-white/10 transition text-left cursor-pointer focus:outline-none"
                   type="button"
                 >
@@ -533,7 +555,7 @@ export function Profile() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-white/50">Todas las divisas</p>
-                    <p className="text-sm font-bold text-indigo-400 mt-0.5">Explorar mÃ¡s</p>
+                    <p className="text-sm font-bold text-indigo-400 mt-0.5">Explorar más</p>
                   </div>
                 </button>
               </div>
@@ -542,7 +564,12 @@ export function Profile() {
 
         </section>
       </div>
+
+      <AddAccountModal
+        isOpen={isAddAccountModalOpen}
+        onClose={() => setIsAddAccountModalOpen(false)}
+        onAccountCreated={handleAccountCreated}
+      />
     </main>
   );
 }
-
